@@ -101,14 +101,45 @@ int main(int argc, char *argv[]) {
 
             strcpy(sala_actual, sala);
         }
-        else if (strncmp(comando, "exit", 5) == 0){
-            msg.mtype = MSG_LEAVE; // tipo mensaje para exit
-            if (msgsnd(cola_sala, &msg, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
-                perror("Error al enviar mensaje");
+        else if (strncmp(comando, "leave", 5) == 0){
+            if (strlen(sala_actual) == 0) {
+                printf("No estás en ninguna sala.\n");
                 continue;
             }
-
+            msg.mtype = MSG_LEAVE; // tipo mensaje para exit
+            strcpy(msg.remitente, nombre_usuario);
+            strcpy(msg.sala, sala_actual);
+            strcpy(msg.texto, "");
+            msg.cola_id = -1;
+            if (msgsnd(cola_sala, &msg, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
+                perror("Error al salir de la sala");
+                continue;
+            }
+            sala_actual[0] = '\0'; // limpiar sala actual
+            cola_sala = -1;
         } 
+        else if (strcmp(comando, "/list")==0){
+            msg.mtype = MSG_LIST;
+            strcpy(msg.remitente, nombre_usuario);
+            strcpy(msg.sala, "");
+            strcpy(msg.texto, "");
+            if (msgsnd(cola_global, &msg, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
+                perror("Error al solicitar lista de salas");
+            }
+        }
+        else if (strcmp(comando, "/users") == 0) {
+            if (strlen(sala_actual) == 0) {
+                printf("No estás en ninguna sala.\n");
+                continue;
+            }
+            msg.mtype = MSG_USERS;
+            strcpy(msg.remitente, nombre_usuario);
+            strcpy(msg.sala, sala_actual);
+            strcpy(msg.texto, "");
+            if (msgsnd(cola_global, &msg, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
+                perror("Error al solicitar lista de usuarios");
+            }
+        }
         else if (strlen(comando) > 0) {
             // Enviar un mensaje a la sala actual
             if (strlen(sala_actual) == 0) {
@@ -124,11 +155,8 @@ int main(int argc, char *argv[]) {
             if (msgsnd(cola_sala, &msg, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
                 perror("Error al enviar mensaje");
                 continue;
-            }
-        
-            
+            } 
         }
-        
     }
 
     return 0;
