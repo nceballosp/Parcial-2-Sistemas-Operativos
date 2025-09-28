@@ -153,16 +153,67 @@ int main() {
             printf("Mensaje en la sala %s de %s: %s\n", msg.sala, msg.remitente, msg.texto);
 
             // Buscar la sala
-            int indice_sala = buscar_sala(msg.sala);
+            int indice_sala; 
+            indice_sala = buscar_sala(msg.sala);
             if (indice_sala != -1) {
                 // Reenviar el mensaje a todos en la sala
                 enviar_a_todos_en_sala(indice_sala, &msg);
             }
-        }else if (msg.mtype == MSG_LEAVE) { // Exit
+            char filename[100];
+            sprintf(filename, "%s_historial.txt", msg.sala);
+            FILE *f = fopen(filename, "a");
+            if (f) {
+                fprintf(f, "%s: %s\n", msg.remitente, msg.texto);
+                fclose(f);
+            }
+
+            indice_sala = buscar_sala(msg.sala);
+            if (indice_sala != -1) {
+                enviar_a_todos_en_sala(indice_sala, &msg);
+            }
+        } else if (msg.mtype == MSG_LEAVE) { // Exit
             int indice_sala = buscar_sala(msg.sala);
             if (indice_sala != -1) {
                 if (quitar_usuario_de_sala(indice_sala, msg.remitente) == 0) {
                     printf("Usuario %s salió de la sala %s\n", msg.remitente, msg.sala);
+                }
+            }
+        } else if (msg.mtype == MSG_LIST){
+            printf("Solicitud de listar salas por %s\n", msg.remitente);
+            struct mensaje respuesta;
+            respuesta.mtype = MSG_LIST;
+            strcpy(respuesta.remitente, "Servidor");
+            strcpy(respuesta.sala, "");
+            respuesta.cola_id = 0;
+
+            char buffer[MAX_TEXTO] = "";
+            for (int i = 0; i < num_salas; i++) {
+                strcat(buffer, salas[i].nombre);
+                strcat(buffer, " ");
+            }
+            strcpy(respuesta.texto, buffer);
+
+            if (msgsnd(cola_global, &respuesta, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
+                perror("Error al enviar lista de salas");
+            }
+        } else if (msg.mtype == MSG_USERS) {
+            int indice_sala = buscar_sala(msg.sala);
+            if (indice_sala != -1) {
+                struct mensaje respuesta;
+                respuesta.mtype = MSG_USERS;
+                strcpy(respuesta.remitente, "Servidor");
+                strcpy(respuesta.sala, msg.sala);
+                respuesta.cola_id = 0;
+
+                char buffer[MAX_TEXTO] = "";
+                for (int i = 0; i < salas[indice_sala].num_usuarios; i++) {
+                    strcat(buffer, salas[indice_sala].usuarios[i]);
+                    strcat(buffer, " ");
+                }
+                strcpy(respuesta.texto, buffer);
+
+                if (msgsnd(cola_global, &respuesta, sizeof(struct mensaje) - sizeof(long), 0) == -1) {
+                    perror("Error al enviar lista de usuarios");
                 }
             }
         }
