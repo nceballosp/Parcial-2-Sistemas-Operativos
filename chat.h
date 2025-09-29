@@ -21,15 +21,20 @@ struct mensaje {
     char remitente[MAX_NOMBRE]; // Nombre usuario
     char texto[MAX_TEXTO];      // Texto del mensaje
     char sala[MAX_NOMBRE];      // Nombre de sala
-    int cola_id;                // ID de la cola de sala
+    int cola_id;                // ID de la cola privada del remitente
+};
+
+// Estructura para usuario
+struct usuario {
+    char nombre[MAX_NOMBRE];
+    int cola_id; 
 };
 
 // Estructura para sala
 struct sala {
     char nombre[MAX_NOMBRE];
-    int cola_id;
     int num_usuarios;
-    char usuarios[MAX_USUARIOS_POR_SALA][MAX_NOMBRE];
+    struct usuario usuarios[MAX_USUARIOS_POR_SALA];
 };
 
 #endif
